@@ -59,6 +59,8 @@ The token exchange defaults to `https://api.pump.co`. Override it for local test
 
 ```bash
 pump-gcp-radar pump-report --project my-proj --upload-token <TOKEN> --api-base http://localhost:8001
+# or
+PUMP_API_BASE=http://localhost:8001 pump-gcp-radar pump-report --project my-proj --upload-token <TOKEN>
 ```
 
 ### How the push works

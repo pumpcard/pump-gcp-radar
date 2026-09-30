@@ -16,7 +16,8 @@ def register(subparsers):
         "pump-report", help="Example: count scanned resources per service")
     p.add_argument("--project", required=True, help="GCP project ID")
     p.add_argument("--upload-token", help="Pump upload token; writes the CSVs and uploads them to Pump")
-    p.add_argument("--api-base", default=DEFAULT_API_BASE, help=argparse.SUPPRESS)
+    p.add_argument("--api-base", default=os.environ.get("PUMP_API_BASE", DEFAULT_API_BASE),
+                   help=argparse.SUPPRESS)
     p.add_argument("--output", default="inventory.csv",
                    help="Inventory CSV path used with --upload-token (default: inventory.csv)")
     p.add_argument("--billing-table",

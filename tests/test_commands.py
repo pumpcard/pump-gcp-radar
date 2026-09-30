@@ -37,3 +37,9 @@ def test_upload_token_exports_csv_and_uploads(monkeypatch):
     commands.run_pump_report(args)
     assert seen == {"export": "inventory.csv", "base": "https://api.pump.co",
                     "token": "T", "files": {"inventory": "inventory.csv"}}
+
+
+def test_api_base_defaults_from_env(monkeypatch):
+    monkeypatch.setenv("PUMP_API_BASE", "http://localhost:8001")
+    args = _parser().parse_args(["pump-report", "--project", "p"])
+    assert args.api_base == "http://localhost:8001"
