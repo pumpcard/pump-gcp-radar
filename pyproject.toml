@@ -5,22 +5,19 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pump-gcp-radar"
 version = "0.1.0"
-description = "Extra commands for gcp-radar, added through its plugin hook"
+description = "gcp-radar with a one-command push of inventory and billing CSVs to Pump"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
 authors = [{name = "Mor Michaeli"}]
-dependencies = ["gcp-radar>=1.3.0,<2"]
+dependencies = ["gcp-radar>=1.3.0,<1.4"]
 
 [project.optional-dependencies]
 dev = ["pytest", "build", "twine"]
 
-# Runs gcp-radar's own CLI; the plugin below adds the extra commands to it.
+# gcp-radar's CLI, plus `run --upload-token`.
 [project.scripts]
-pump-gcp-radar = "gcp_radar.__main__:main"
-
-[project.entry-points."gcp_radar.commands"]
-pump-report = "pump_gcp_radar.commands:register"
+pump-gcp-radar = "pump_gcp_radar.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
