@@ -38,6 +38,9 @@ pump-gcp-radar pump-report --project my-proj \
 
 This inventories the project read-only, queries the billing export, writes
 `inventory.csv` and `billing.csv` locally, and uploads both straight to Pump.
+Both use gcp-radar's one-shot format (a `RecordType` column on every row):
+`inventory.csv` holds `Inventory` and `Commitment` (CUD) rows; `billing.csv`
+holds `DailyCost`, `MonthlyCost`, `SkuCost` and `Credit` rows.
 Pump detects both files, runs its analysis, and surfaces the findings in the app.
 
 - `--billing-table` can also come from `$GCP_RADAR_BILLING_TABLE`. Without it,

@@ -26,17 +26,29 @@ def test_pump_report_counts_by_service(monkeypatch, capsys):
     assert "Total" in capsys.readouterr().out
 
 
-def test_upload_token_exports_csv_and_uploads(monkeypatch):
+def test_upload_token_writes_csvs_and_uploads(monkeypatch, tmp_path):
+    inv = [{"ProjectID": "p", "Service": "Cloud SQL", "Name": "db", "ID": "1",
+            "Type/Size": "x", "Status": "UP", "Region": "r", "Extra": ""}]
+    daily = [{"BillingAccount": "b", "ProjectID": "p", "Service": "s", "Date": "2026-01-01",
+              "Amount": 1, "Currency": "USD"}]
     seen = {}
     monkeypatch.setattr("gcp_radar.inventory.run_inventory",
-                        lambda projects, export_path=None: seen.update(export=export_path) or [])
+                        lambda projects, export_path=None: inv)
+    monkeypatch.setattr("gcp_radar.commitments.resolve_commitment_scope",
+                        lambda billing_account=None, project=None: (None, []))
+    monkeypatch.setattr("gcp_radar.billing.run_billing", lambda *a, **k: daily)
+    monkeypatch.setattr("gcp_radar.billing.fetch_report", lambda *a, **k: [])
     monkeypatch.setattr("pump_gcp_radar.upload.upload_csvs",
                         lambda base, token, files: seen.update(base=base, token=token, files=files))
-    args = _parser().parse_args(["pump-report", "--project", "p", "--upload-token", "T"])
-    args.billing_table = None
+    args = _parser().parse_args(
+        ["pump-report", "--project", "p", "--upload-token", "T", "--billing-table", "t",
+         "--output", str(tmp_path / "inventory.csv"),
+         "--billing-output", str(tmp_path / "billing.csv")])
     commands.run_pump_report(args)
-    assert seen == {"export": "inventory.csv", "base": "https://api.pump.co",
-                    "token": "T", "files": {"inventory": "inventory.csv"}}
+    assert seen["files"] == {"inventory": str(tmp_path / "inventory.csv"),
+                             "billing": str(tmp_path / "billing.csv")}
+    assert "Inventory" in (tmp_path / "inventory.csv").read_text()
+    assert "DailyCost" in (tmp_path / "billing.csv").read_text()
 
 
 def test_api_base_defaults_from_env(monkeypatch):

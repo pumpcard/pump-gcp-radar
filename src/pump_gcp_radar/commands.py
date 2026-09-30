@@ -34,28 +34,50 @@ def run_pump_report(args):
     # Imported here so `--help` stays fast and doesn't need GCP credentials.
     from gcp_radar.inventory import run_inventory
 
-    token = getattr(args, "upload_token", None)
-    rows = run_inventory([args.project], export_path=args.output if token else None)
+    rows = run_inventory([args.project], export_path=None)
     counts = Counter(r["Service"] for r in rows)
     print(f"\nResources in {args.project}:")
     for service, n in counts.most_common():
         print(f"  {service:<20} {n}")
     print(f"  {'Total':<20} {sum(counts.values())}")
 
-    if token:
-        _upload(args)
+    if getattr(args, "upload_token", None):
+        _upload(args, rows)
     return counts
 
 
-def _upload(args):
+def _upload(args, inventory_rows):
+    """Write inventory.csv (resources + CUDs) and billing.csv, then upload both."""
+    from gcp_radar import combined as cb
     from pump_gcp_radar.upload import UploadError, upload_csvs
 
+    inventory = cb.inventory_records(inventory_rows)
+    try:
+        from gcp_radar.commitments import resolve_commitment_scope, run_commitments
+        account, projects = resolve_commitment_scope(project=args.project)
+        if projects:
+            inventory += cb.commitment_records(
+                run_commitments(projects, billing_account=account))
+    except Exception as e:  # CUDs are optional; don't lose the rest of the upload
+        print(f"  [!] Skipping commitments: {e}")
+    cb.export_combined_csv(inventory, args.output)
     files = {"inventory": args.output}
+
     if args.billing_table:
-        from gcp_radar.billing import run_billing
-        run_billing(args.billing_table, days=args.billing_days,
-                    output=args.billing_output, project=args.project)
+        from gcp_radar.billing import fetch_report, run_billing
+        table, days, project = args.billing_table, args.billing_days, args.project
+        billing = cb.daily_cost_records(
+            run_billing(table, days=days, project=project))
+        for name, convert in (("by_service_month", cb.monthly_cost_records),
+                              ("by_sku", cb.sku_cost_records),
+                              ("credits", cb.credit_records)):
+            print(f"  Querying {name.replace('_', ' ')} …")
+            billing += convert(fetch_report(table, name, days=days, project=project))
+        cb.export_combined_csv(billing, args.billing_output)
         files["billing"] = args.billing_output
+    else:
+        print("\n  [!] No --billing-table / GCP_RADAR_BILLING_TABLE: uploading inventory only.")
+
     print("\nUploading to Pump …")
     try:
         upload_csvs(args.api_base, args.upload_token, files)
