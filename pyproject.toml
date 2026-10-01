@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pump-gcp-radar"
-version = "0.2.0"
+version = "0.2.1"
 description = "gcp-radar with a one-command push of inventory and billing CSVs to Pump"
 readme = "README.md"
 license = "MIT"
