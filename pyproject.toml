@@ -9,7 +9,7 @@ description = "gcp-radar with a one-command push of inventory and billing CSVs t
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
-authors = [{name = "Mor Michaeli"}]
+authors = [{name = "Pump"}]
 dependencies = ["gcp-radar>=1.3.0,<1.4"]
 
 [project.optional-dependencies]
